@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using FastEndpoints;
 using FastEndpoints.Swagger;
 
@@ -34,7 +35,10 @@ var app = builder.Build();
 app.UseExceptionHandler();
 
 // Use FastEndpoints
-app.UseFastEndpoints();
+app.UseFastEndpoints(c =>
+{
+    c.Serializer.Options.Converters.Add(new JsonStringEnumConverter());
+});
 
 // Use Swagger UI
 app.UseSwaggerGen();
