@@ -12,6 +12,14 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddOutputCache();
 
+// Add Orleans Client for real-time OrderBook (connects to Silo)
+builder.UseOrleansClient(clientBuilder =>
+{
+    clientBuilder.UseLocalhostClustering();
+    // Same stream provider as Silo for subscribing to OrderBook updates
+    clientBuilder.AddMemoryStreams("OrderBookProvider");
+});
+
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
     {
         // This URL uses "https+http://" to indicate HTTPS is preferred over HTTP.
