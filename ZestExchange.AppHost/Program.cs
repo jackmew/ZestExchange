@@ -11,4 +11,7 @@ builder.AddProject<Projects.ZestExchange_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithReference(apiService);
 
+// FakeOrderGateway - Load Driver for simulating high-concurrency order flow
+builder.AddProject<Projects.ZestExchange_FakeOrderGateway>("fakeordergateway");
+
 builder.Build().Run();

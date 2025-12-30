@@ -13,6 +13,7 @@
     <ProjectReference Include="..\ZestExchange.ApiService\ZestExchange.ApiService.csproj" />
     <ProjectReference Include="..\ZestExchange.Web\ZestExchange.Web.csproj" />
     <ProjectReference Include="..\ZestExchange.Silo\ZestExchange.Silo.csproj" />
+    <ProjectReference Include="..\ZestExchange.FakeOrderGateway\ZestExchange.FakeOrderGateway.csproj" />
   </ItemGroup>
 
   <ItemGroup>

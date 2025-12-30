@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZestExchange.Contracts", "Z
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZestExchange.Silo", "ZestExchange.Silo\ZestExchange.Silo.csproj", "{07A82CDA-1DA0-42FF-B9BF-9052EE6FF2D0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZestExchange.FakeOrderGateway", "ZestExchange.FakeOrderGateway\ZestExchange.FakeOrderGateway.csproj", "{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -97,6 +99,18 @@ Global
 		{07A82CDA-1DA0-42FF-B9BF-9052EE6FF2D0}.Release|x64.Build.0 = Release|Any CPU
 		{07A82CDA-1DA0-42FF-B9BF-9052EE6FF2D0}.Release|x86.ActiveCfg = Release|Any CPU
 		{07A82CDA-1DA0-42FF-B9BF-9052EE6FF2D0}.Release|x86.Build.0 = Release|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Debug|x64.Build.0 = Debug|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Debug|x86.Build.0 = Debug|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Release|x64.ActiveCfg = Release|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Release|x64.Build.0 = Release|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Release|x86.ActiveCfg = Release|Any CPU
+		{CCA3F814-B8C0-4F5B-BFFC-D4A42354D91C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
