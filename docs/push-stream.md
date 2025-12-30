@@ -140,3 +140,144 @@ dotnet add ZestExchange.Web/ZestExchange.Web.csproj package Microsoft.Orleans.St
 IAsyncStream<OrderBookUpdated>? _orderBookStream;
 await _orderBookStream.OnNextAsync(update);
 ```
+
+
+# 問題是 Memory Streams 主要是給 Silo 內部用的，跨進程（Web Client → Silo）需要特殊配置。
+
+
+  改成 Timer 輪詢（每 500ms）：
+  - Polls 計數器會一直增加
+  - 下單後不用刷新，會自動更新
+
+  ---
+  關於 Orleans Streams 的問題：
+
+  Memory Streams 在 單進程 內運作良好，但跨進程（Web Client → Silo）有限制。
+
+  更好的方案（面試可以講）：
+  1. 生產環境：用 Azure Event Hubs / Kafka Stream Provider
+  2. 本地開發：Timer 輪詢 或 SignalR Hub
+```
+                        面試回答
+  ┌─────────────────────────────────────────────────────────┐
+  │  "我用 Memory Streams 做 MVP，生產環境會換成          │
+  │   Event Hubs，因為 Memory Streams 不支援跨進程訂閱"   │
+  └─────────────────────────────────────────────────────────┘
+
+```
+
+## ChatRoom - Orleans Stream 可以運作
+```
+  ┌─────────────────────────────────────────────────────────┐
+  │  Client 是 Console App (Orleans Client)                 │
+  │                                                         │
+  │  Console App ──────────────────────► Orleans Cluster    │
+  │  (Orleans Client)    直接連接         (Silo)           │
+  │       │                                                 │
+  │       └── stream.SubscribeAsync() 在同一個 Orleans 網路內│
+  └─────────────────────────────────────────────────────────┘
+```  
+Console App 是 Orleans Client，可以直接訂閱 MemoryStreams！
+
+在官方最新的 ChatRoom 範例中，他們其實是把 Web App 和 Silo  Co-hosting (共存) 在同一個 Process 裡的！
+
+
+
+## GPSTracker - Browser 不能直接訂閱 Orleans Streams
+```
+  ┌─────────────────────────────────────────────────────────┐
+  │  Browser 不是 Orleans Client！                          │
+  │                                                         │
+  │  DeviceGrain → PushNotifierGrain → RemoteLocationHub    │
+  │                                           ↓             │
+  │                                    SignalR Hub          │
+  │                                           ↓             │
+  │                                       Browser           │
+  └─────────────────────────────────────────────────────────┘
+```
+  GPSTracker 用 SignalR 作為橋樑！不是直接用 Orleans Streams！
+
+
+## 我們的架構瓶頸
+   * 你的 Silo 在 Process A。
+   * 你的 Web (Blazor) 在 Process B。
+   * 你想讓 Process B 訂閱 Process A 的事件。
+這必須透過網路 (Network)。Memory 是不通的，必須要有一個 中間人 (Broker) 或是 直接的 RPC 呼叫。
+
+
+結論：你的架構與 ChatRoom 不同
+
+* ChatRoom: 單體式架構 (Monolith)。Web 和 Orleans Silo
+    都在同一個 .exe 裡跑。
+* ZestExchange: 微服務架構 (Microservices)。
+    * ZestExchange.Silo 是一個 Process (Docker Container)。
+    * ZestExchange.Web 是另一個 Process (Docker Container)。
+
+在你的架構下，MemoryStream 絕對無法跨越這兩個 Container。
+
+## 方案
+
+### 方案 B: SignalR Bridge (GPSTracker 模式)
+````
+  ┌─────────────────────────────────────────────────────────────────┐
+  │              ZestExchange.Silo (需要加 SignalR)                  │
+  │                                                                  │
+  │  MatchingEngineGrain                                            │
+  │       │                                                          │
+  │       │ PlaceOrder → 撮合完成                                    │
+  │       ▼                                                          │
+  │  直接呼叫 IHubContext<OrderBookHub>                              │
+  │       │                                                          │
+  │       │ Clients.All.SendAsync("OrderBookUpdated", snapshot)     │
+  │       ▼                                                          │
+  │  SignalR Hub (OrderBookHub) ─────────────────────────────────────┼──► WebSocket
+  │                                                                  │
+  └─────────────────────────────────────────────────────────────────┘
+                                                                     │
+                                                                     ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │              ZestExchange.Web (純 Blazor)                        │
+  │                                                                  │
+  │  ❌ 不需要 UseOrleansClient()                                    │
+  │  ✅ 用 HubConnection 連到 Silo 的 SignalR                        │
+  │                                                                  │
+  │  hubConnection.On("OrderBookUpdated", data => { ... })          │
+  └─────────────────────────────────────────────────────────────────┘
+```
+  問題：GPSTracker 的 Silo 和 Web 是同一個進程。我們的是分開的，所以：
+  - 需要在 Silo 開一個 HTTP endpoint 給 SignalR
+  - 或者把 Silo 改成 ASP.NET Core Host（同時跑 Orleans + SignalR）
+
+  ---
+ ### 方案 C: Redis Streams (Gemini 建議)
+```
+  ┌─────────────────────────────────────────────────────────────────┐
+  │                        Redis (Aspire 加一行)                     │
+  │                                                                  │
+  │                    ┌─────────────────────┐                      │
+  │                    │   Redis Streams     │                      │
+  │                    │   "orderbook"       │                      │
+  │                    └─────────────────────┘                      │
+  │                         ▲           │                           │
+  │                         │           │                           │
+  │           Publish       │           │  Subscribe                │
+  └─────────────────────────┼───────────┼───────────────────────────┘
+                            │           │
+           ┌────────────────┘           └────────────────┐
+           │                                             │
+  ┌────────┴────────┐                         ┌──────────┴────────┐
+  │ ZestExchange.Silo│                         │ ZestExchange.Web  │
+  │                  │                         │                   │
+  │ UseOrleans()     │                         │ UseOrleansClient()│
+  │ AddRedisStreams()│                         │ AddRedisStreams() │
+  │                  │                         │                   │
+  │ Grain publishes  │                         │ Blazor subscribes │
+  │ to Redis Stream  │                         │ to Redis Stream   │
+  └──────────────────┘                         └───────────────────┘
+```
+  優點：
+  - Orleans Streams API 不變（只改 Provider）
+  - 你目前的 Blazor 代碼幾乎不用改
+  - 跨進程 ✅
+  - 生產環境 Ready ✅
+  - 面試加分（Redis Message Broker）
