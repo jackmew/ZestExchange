@@ -75,15 +75,30 @@ public class OrderGeneratorWorker : BackgroundService
                 // 2. Decide: Buy or Sell?
                 var side = _random.Next(2) == 0 ? OrderSide.Buy : OrderSide.Sell;
 
-                // 3. Determine Price (Around current price with spread)
-                // Spread ~ 0.2%
+                // 3. Determine Price
+                // Spread ~ 0.2% base
                 var spread = _currentPrice * 0.002m;
                 var priceOffset = (decimal)(_random.NextDouble() * (double)spread);
                 
-                // Buy lower, Sell higher
-                var price = side == OrderSide.Buy 
-                    ? _currentPrice - priceOffset 
-                    : _currentPrice + priceOffset;
+                // Marketable Order (Taker) - 30% chance
+                // Buy high or Sell low to cross the spread and trigger a match immediately
+                bool isMarketable = _random.NextDouble() < 0.3;
+
+                decimal price;
+                if (isMarketable)
+                {
+                    // Taker: Aggressively cross the spread
+                    price = side == OrderSide.Buy 
+                        ? _currentPrice + priceOffset // Buy higher (hit Asks)
+                        : _currentPrice - priceOffset; // Sell lower (hit Bids)
+                }
+                else
+                {
+                    // Maker: Passive order (Rest in book)
+                    price = side == OrderSide.Buy 
+                        ? _currentPrice - priceOffset // Buy lower
+                        : _currentPrice + priceOffset; // Sell higher
+                }
 
                 // Round to 2 decimals
                 price = Math.Round(price, 2);
