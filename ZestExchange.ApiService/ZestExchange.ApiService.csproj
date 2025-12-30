@@ -10,4 +10,9 @@
     <ProjectReference Include="..\ZestExchange.ServiceDefaults\ZestExchange.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="FastEndpoints" Version="7.1.1" />
+    <PackageReference Include="FastEndpoints.Swagger" Version="7.1.1" />
+  </ItemGroup>
+
 </Project>
