@@ -112,3 +112,75 @@ Contract = 合約/契約，表示服務之間的「約定」。
   <ProjectReference Include="..\ZestExchange.Contracts\ZestExchange.Contracts.csproj" />
 
   這樣 ApiService 和之後的 Silo 都能共用同一份類型定義。
+
+# Domain-Driven Design (DDD)
+
+ Domain 是什麼？
+
+  Domain = 業務邏輯核心 (交易所的核心業務)
+```
+  ZestExchange.Silo/
+  ├── Domain/              ← 業務邏輯層
+  │   └── OrderBook/
+  │       ├── Order.cs     ← Domain Entity (有行為)
+  │       └── OrderBookEngine.cs
+  ├── Grains/              ← Orleans 接入層 (Step 7)
+  └── Program.cs
+```
+  Order.cs - Entity vs DTO
+
+  | 類型   | 位置       | 特性                 |
+  |--------|------------|----------------------|
+  | DTO    | Contracts/ | 純資料，沒有行為     |
+  | Entity | Domain/    | 有資料 + 行為 (方法) |
+
+```c#
+  // DTO (Contracts) - 只有資料
+  public record PlaceOrderRequest(string Symbol, decimal Price, decimal Quantity);
+
+  // Entity (Domain) - 有資料 + 行為
+  public class Order
+  {
+      public decimal FilledQuantity { get; private set; }
+      public OrderStatus Status { get; private set; }
+
+      // 行為：成交
+      public void Fill(decimal quantity)
+      {
+          FilledQuantity += quantity;
+          Status = FilledQuantity >= Quantity
+              ? OrderStatus.Filled
+              : OrderStatus.PartiallyFilled;
+      }
+
+      // 行為：取消
+      public void Cancel()
+      {
+          Status = OrderStatus.Cancelled;
+      }
+  }
+```
+
+# Order is Rich Domain Mode
+ 為什麼這樣設計？
+
+  封裝業務規則：
+
+  // ❌ 不好 - 業務邏輯散落在外面
+  order.FilledQuantity += 100;
+  if (order.FilledQuantity >= order.Quantity)
+      order.Status = OrderStatus.Filled;
+
+  // ✅ 好 - 業務邏輯封裝在 Entity 內
+  order.Fill(100);  // 自動更新 Status
+
+  DDD 層級對照
+
+  | 層級           | 專案         | 職責                                  |
+  |----------------|--------------|---------------------------------------|
+  | Domain         | Silo/Domain/ | 核心業務邏輯 (Order, OrderBookEngine) |
+  | Application    | Silo/Grains/ | 用例協調 (Orleans Grain)              |
+  | Infrastructure | Silo/        | 技術細節 (Redis, DB)                  |
+  | Contracts      | Contracts/   | API 介面定義                          |
+
+  面試可以提到：「Order 是 Rich Domain Model，不只是資料袋，還封裝了業務行為。」
