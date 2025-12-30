@@ -14,7 +14,7 @@ public record PlaceOrderResponse(
     string? Message = null);
 
 // Cancel Order
-public record CancelOrderRequest(Guid OrderId);
+public record CancelOrderRequest(string Symbol, Guid OrderId);
 
 public record CancelOrderResponse(
     Guid OrderId,
@@ -22,7 +22,7 @@ public record CancelOrderResponse(
     string? Message = null);
 
 // Get Single Order
-public record GetOrderRequest(Guid OrderId);
+public record GetOrderRequest(string Symbol, Guid OrderId);
 
 public record GetOrderResponse(
     Guid OrderId,

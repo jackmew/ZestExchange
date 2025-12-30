@@ -12,6 +12,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ZestExchange.ApiService\ZestExchange.ApiService.csproj" />
     <ProjectReference Include="..\ZestExchange.Web\ZestExchange.Web.csproj" />
+    <ProjectReference Include="..\ZestExchange.Silo\ZestExchange.Silo.csproj" />
   </ItemGroup>
 
   <ItemGroup>

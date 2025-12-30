@@ -9,9 +9,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.2" />
+    <PackageReference Include="Microsoft.Orleans.Server" Version="9.2.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ZestExchange.Contracts\ZestExchange.Contracts.csproj" />
+    <ProjectReference Include="..\ZestExchange.ServiceDefaults\ZestExchange.ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

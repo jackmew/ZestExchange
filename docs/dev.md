@@ -242,3 +242,57 @@ dotnet add ZestExchange.Silo reference ZestExchange.ServiceDefaults
   | Virtual Actor        | 不存在就自動建立，閒置就自動回收            |
   | Location Transparent | 跨機器呼叫像本地呼叫一樣                    |
   | Horizontal Scaling   | 不同 Symbol 自動分散到不同 Silo             |
+
+
+# IClusterClient - DI 注入 Endpoint
+
+   目前完成的架構
+```
+  ┌──────────────────┐         ┌──────────────────┐
+  │   ApiService     │         │      Silo        │
+  │  (FastEndpoints) │         │    (Orleans)     │
+  ├──────────────────┤         ├──────────────────┤
+  │                  │         │                  │
+  │  PlaceOrder      │◀───────▶│ MatchingEngine   │
+  │  Endpoint        │ Orleans │ Grain            │
+  │                  │ Client  │   │              │
+  │  GetOrderBook    │         │   ▼              │
+  │  Endpoint        │         │ OrderBookEngine  │
+  │                  │         │                  │
+  └──────────────────┘         └──────────────────┘
+        ▲
+        │ IClusterClient
+        │ (DI 注入)
+```
+  IClusterClient 是什麼？
+```c#
+  // ApiService 的 Endpoint
+  public class PlaceOrderEndpoint
+  {
+      private readonly IClusterClient _clusterClient;  // Orleans 提供的「連接器」
+
+      public override async Task HandleAsync(...)
+      {
+          // 用 Symbol 取得該交易對的 Grain
+          var grain = _clusterClient.GetGrain<IMatchingEngineGrain>("BTC-USDT");
+
+          // 呼叫 Grain 方法 (跨 process RPC)
+          var result = await grain.PlaceOrderAsync(request);
+      }
+  }
+```
+
+  IClusterClient = Orleans Client，用來跟 Orleans Silo 溝通的橋樑。
+
+  為什麼每個 Endpoint 都要注入它？
+```    
+  | 沒有 IClusterClient              | 有 IClusterClient             |
+  |----------------------------------|-------------------------------|
+  | Endpoint 直接處理業務邏輯 (mock) | Endpoint 只是「轉發」給 Grain |
+  | 單機、無狀態                     | 分散式、有狀態 (OrderBook)    |
+```
+  目前的流程：
+  HTTP Request → FastEndpoint → IClusterClient → Orleans Grain → OrderBookEngine
+
+  ---
+  你之後想繼續完成什麼？
