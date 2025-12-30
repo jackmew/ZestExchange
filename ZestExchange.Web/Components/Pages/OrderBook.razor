@@ -1,4 +1,5 @@
 @page "/orderbook"
+@page "/orderbook/{Symbol}"
 @rendermode InteractiveServer
 @implements IAsyncDisposable
 @using Orleans
@@ -8,9 +9,15 @@
 @using ZestExchange.Contracts.Events
 @inject IClusterClient ClusterClient
 
-<PageTitle>OrderBook</PageTitle>
+<PageTitle>OrderBook - @Symbol</PageTitle>
 
-<h1>OrderBook - BTC-USDT</h1>
+<div class="d-flex justify-content-between align-items-center">
+    <h1>OrderBook - @Symbol</h1>
+    <div class="btn-group">
+        <a href="/orderbook/BTC-USDT" class="btn btn-outline-primary @(Symbol == "BTC-USDT" ? "active" : "")">BTC-USDT</a>
+        <a href="/orderbook/ETH-USDT" class="btn btn-outline-primary @(Symbol == "ETH-USDT" ? "active" : "")">ETH-USDT</a>
+    </div>
+</div>
 <p class="text-muted">Real-time updates via Orleans Streams</p>
 
 <div class="row">
@@ -80,6 +87,10 @@
 </div>
 
 @code {
+    [Parameter]
+    public string? Symbol { get; set; }
+
+    private string _currentSubscribedSymbol = "";
     private List<PriceLevelDto> _bids = new();
     private List<PriceLevelDto> _asks = new();
     private DateTime _lastUpdate = DateTime.MinValue;
@@ -88,25 +99,50 @@
 
     private StreamSubscriptionHandle<OrderBookUpdated>? _subscription;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
+    {
+        // Default symbol
+        if (string.IsNullOrEmpty(Symbol)) Symbol = "BTC-USDT";
+        Symbol = Symbol.ToUpper();
+
+        // Only re-subscribe if the symbol actually changed
+        if (Symbol != _currentSubscribedSymbol)
+        {
+            await SubscribeToSymbol(Symbol);
+        }
+    }
+
+    private async Task SubscribeToSymbol(string symbol)
     {
         try
         {
-            // Initial load from Grain
-            var grain = ClusterClient.GetGrain<IMatchingEngineGrain>("BTC-USDT");
+            _status = $"Switching to {symbol}...";
+            
+            // 1. Cleanup old subscription
+            if (_subscription != null)
+            {
+                await _subscription.UnsubscribeAsync();
+                _subscription = null;
+                _updateCount = 0;
+            }
+
+            // 2. Initial load from Grain
+            var grain = ClusterClient.GetGrain<IMatchingEngineGrain>(symbol);
             var snapshot = await grain.GetOrderBookAsync(5);
             _bids = snapshot.Bids;
             _asks = snapshot.Asks;
             _lastUpdate = snapshot.Timestamp;
-            _status = "Connected";
 
-            // Subscribe to Orleans Stream for real-time updates
+            // 3. Subscribe to Orleans Stream
             var streamProvider = ClusterClient.GetStreamProvider("OrderBookProvider");
             var stream = streamProvider.GetStream<OrderBookUpdated>(
-                StreamId.Create("orderbook", "BTC-USDT"));
+                StreamId.Create("orderbook", symbol));
 
             _subscription = await stream.SubscribeAsync(OnOrderBookUpdated);
-            _status = "Subscribed to stream";
+            
+            _currentSubscribedSymbol = symbol;
+            _status = $"Subscribed to {symbol}";
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -121,7 +157,6 @@
         _lastUpdate = update.Timestamp;
         _updateCount++;
 
-        // Trigger UI re-render (Blazor Server uses SignalR to push to browser)
         InvokeAsync(StateHasChanged);
 
         return Task.CompletedTask;
@@ -131,7 +166,7 @@
     {
         if (_subscription != null)
         {
-            await _subscription.UnsubscribeAsync();
+            try { await _subscription.UnsubscribeAsync(); } catch { }
         }
     }
 }
