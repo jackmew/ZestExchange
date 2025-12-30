@@ -1,6 +1,6 @@
 using FastEndpoints;
 
-namespace ZestExchange.ApiService.Endpoints;
+namespace ZestExchange.ApiService.Endpoints.Orders;
 
 public class PlaceOrderEndpoint : Endpoint<PlaceOrderRequest, PlaceOrderResponse>
 {
