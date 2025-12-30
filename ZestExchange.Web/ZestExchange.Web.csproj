@@ -8,6 +8,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ZestExchange.ServiceDefaults\ZestExchange.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\ZestExchange.Contracts\ZestExchange.Contracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Orleans.Client" Version="9.2.1" />
+    <PackageReference Include="Microsoft.Orleans.Streaming" Version="9.2.1" />
   </ItemGroup>
 
 </Project>
