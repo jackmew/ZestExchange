@@ -9,6 +9,12 @@ builder.AddServiceDefaults();
 // Add services to the container.
 builder.Services.AddProblemDetails();
 
+// Add Orleans Client (連接 Silo)
+builder.UseOrleansClient(clientBuilder =>
+{
+    clientBuilder.UseLocalhostClustering();
+});
+
 // Add FastEndpoints
 builder.Services.AddFastEndpoints();
 

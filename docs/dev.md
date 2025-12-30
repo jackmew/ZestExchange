@@ -193,3 +193,52 @@ dotnet add ZestExchange.Contracts package Microsoft.Orleans.Sdk
 dotnet add ZestExchange.Silo package Microsoft.Orleans.Server
 dotnet add ZestExchange.Silo reference ZestExchange.ServiceDefaults
 ```
+
+
+  新增檔案
+```
+  ZestExchange.Contracts/
+  └── Grains/
+      └── IMatchingEngineGrain.cs    # Grain 介面 (Contract)
+
+  ZestExchange.Silo/
+  ├── Grains/
+  │   └── MatchingEngineGrain.cs     # Grain 實作
+  ├── Domain/OrderBook/              # (Step 6)
+  └── Program.cs                     # Orleans 設定
+```
+  Orleans 架構
+```
+  ┌─────────────────────────────────────────────────────────┐
+  │                     Orleans Silo                         │
+  ├─────────────────────────────────────────────────────────┤
+  │  ┌─────────────────┐  ┌─────────────────┐               │
+  │  │MatchingEngine   │  │MatchingEngine   │  ...          │
+  │  │Grain            │  │Grain            │               │
+  │  │(BTC-USDT)       │  │(ETH-USDT)       │               │
+  │  │                 │  │                 │               │
+  │  │ OrderBookEngine │  │ OrderBookEngine │               │
+  │  └─────────────────┘  └─────────────────┘               │
+  └─────────────────────────────────────────────────────────┘
+          ▲                       ▲
+          │ IGrainWithStringKey   │
+          │ Key = "BTC-USDT"      │ Key = "ETH-USDT"
+```
+  Grain 介面
+```c#
+  public interface IMatchingEngineGrain : IGrainWithStringKey
+  {
+      Task<PlaceOrderResponse> PlaceOrderAsync(PlaceOrderRequest request);
+      Task<CancelOrderResponse> CancelOrderAsync(Guid orderId);
+      Task<GetOrderResponse?> GetOrderAsync(Guid orderId);
+      Task<GetOrderBookResponse> GetOrderBookAsync(int depth = 10);
+  }
+```
+  為什麼用 Orleans？(面試重點)
+
+  | 特性                 | 說明                                        |
+  |----------------------|---------------------------------------------|
+  | Single-Threaded      | 每個 Grain 同時只有一個執行緒 = 不需要 lock |
+  | Virtual Actor        | 不存在就自動建立，閒置就自動回收            |
+  | Location Transparent | 跨機器呼叫像本地呼叫一樣                    |
+  | Horizontal Scaling   | 不同 Symbol 自動分散到不同 Silo             |
