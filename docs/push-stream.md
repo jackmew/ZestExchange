@@ -35,17 +35,7 @@
                                 └───────────────┘
 ```
 
-
-```mermaid
-  graph TD
-      ME["MatchingEngineGrain"] --> PN["PushNotifierGrain (Singleton)"]
-      PN --> |batch| Hub["SignalR Hub"]
-      Hub --> Web1[Browser 1]
-      Hub --> Web2[Browser 2]
-```
-
-
-  Orleans Streams vs Browser 連接
+#  Orleans Streams vs Browser 連接
 
   Orleans Streams 不能直接連接 Browser - 這是對的！
 
@@ -80,3 +70,73 @@
 
   ---
   現在讓我實作 ZestExchange 的即時 OrderBook！
+
+# Dependencies
+```
+dotnet add ZestExchange.Web/ZestExchange.Web.csproj package Microsoft.Orleans.Client
+dotnet add ZestExchange.Web/ZestExchange.Web.csproj reference ZestExchange.Contracts/ZestExchange.Contracts.csproj
+// Orlean Streaming
+dotnet add ZestExchange.Silo/ZestExchange.Silo.csproj package Microsoft.Orleans.Streaming
+dotnet add ZestExchange.Web/ZestExchange.Web.csproj package Microsoft.Orleans.Streaming
+```
+
+# Stream Pub/Sub
+  
+  Silo 的兩個 GrainStorage
+```c#
+  //Users/zest/Projects/c-net/ZestExchange/ZestExchange.Silo/Program.cs
+
+  // 1. Default - 用來儲存 Grain State（如果有 [PersistentState] 的話）
+  siloBuilder.AddMemoryGrainStorage("Default");
+
+  // 2. PubSubStore - Orleans Streams 內部使用，追蹤 "誰訂閱了哪個 Stream"
+  siloBuilder.AddMemoryGrainStorage("PubSubStore");
+```
+
+  PubSubStore 的作用：
+```
+  ┌─────────────────────────────────────────────────────────┐
+  │                   PubSubStore                            │
+  │  ┌─────────────────────────────────────────────────┐    │
+  │  │  Stream: "orderbook/BTC-USDT"                    │    │
+  │  │  Subscribers:                                    │    │
+  │  │    - Blazor Component (WebFrontend)             │    │
+  │  │    - (future) Mobile App                        │    │
+  │  └─────────────────────────────────────────────────┘    │
+  └─────────────────────────────────────────────────────────┘
+```
+  Orleans Streams 需要知道「誰訂閱了哪個 Stream」，這個資訊就存在 PubSubStore 裡。
+
+  ---
+## Web 的 Orleans Client
+```c#
+// /Users/zest/Projects/c-net/ZestExchange/ZestExchange.Web/Program.cs
+  builder.UseOrleansClient(clientBuilder =>
+  {
+      clientBuilder.UseLocalhostClustering();           // 連接到 Silo
+      clientBuilder.AddMemoryStreams("OrderBookProvider"); // 訂閱 Stream
+  });
+```
+```
+  流程：
+  ┌──────────────┐                    ┌──────────────┐
+  │    Silo      │                    │  Web (Blazor)│
+  │              │   Orleans Stream   │              │
+  │  Grain       │ ─────────────────► │  Client      │
+  │  (Publish)   │  "OrderBookProvider" │  (Subscribe) │
+  └──────────────┘                    └──────────────┘
+```
+  完整流程：
+  1. Silo 註冊 AddMemoryStreams("OrderBookProvider") → 建立 Stream Provider
+  2. MatchingEngineGrain 呼叫 _orderBookStream.OnNextAsync(update) → Publish
+  3. Web Client 註冊相同的 AddMemoryStreams("OrderBookProvider") → 可以訂閱
+  4. OrderBook.razor 呼叫 stream.SubscribeAsync(OnOrderBookUpdated) → Subscribe
+
+  名稱必須一致："OrderBookProvider" 才能互相溝通！
+
+## Publish current OrderBook state to Orleans Stream
+
+```c#
+IAsyncStream<OrderBookUpdated>? _orderBookStream;
+await _orderBookStream.OnNextAsync(update);
+```
