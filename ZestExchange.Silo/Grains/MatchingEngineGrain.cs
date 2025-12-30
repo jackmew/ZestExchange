@@ -22,6 +22,8 @@ public class MatchingEngineGrain : Grain, IMatchingEngineGrain
 
     // Orleans Stream for real-time OrderBook updates
     private IAsyncStream<OrderBookUpdated>? _orderBookStream;
+    // Orleans Stream for real-time Trade updates
+    private IAsyncStream<TradeOccurred>? _tradeStream;
 
     public MatchingEngineGrain(ILogger<MatchingEngineGrain> logger)
     {
@@ -38,6 +40,8 @@ public class MatchingEngineGrain : Grain, IMatchingEngineGrain
         var streamProvider = this.GetStreamProvider("OrderBookProvider");
         _orderBookStream = streamProvider.GetStream<OrderBookUpdated>(
             StreamId.Create("orderbook", _symbol));
+        _tradeStream = streamProvider.GetStream<TradeOccurred>(
+            StreamId.Create("trades", _symbol));
 
         _logger.LogInformation("MatchingEngineGrain activated for {Symbol}", _symbol);
 
@@ -61,6 +65,24 @@ public class MatchingEngineGrain : Grain, IMatchingEngineGrain
             _logger.LogInformation(
                 "Order {OrderId} matched {TradeCount} trades",
                 order.Id, trades.Count);
+
+            // Publish trade events
+            if (_tradeStream != null)
+            {
+                var tasks = new List<Task>(trades.Count);
+                foreach (var trade in trades)
+                {
+                    var tradeEvent = new TradeOccurred(
+                        Symbol: _symbol,
+                        Price: trade.Price,
+                        Quantity: trade.Quantity,
+                        TakerSide: request.Side, // The incoming order side is the Taker side
+                        Timestamp: trade.Timestamp);
+                    
+                    tasks.Add(_tradeStream.OnNextAsync(tradeEvent));
+                }
+                await Task.WhenAll(tasks);
+            }
         }
 
         // Publish OrderBook update to stream

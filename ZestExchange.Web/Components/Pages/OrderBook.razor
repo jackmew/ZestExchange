@@ -21,13 +21,13 @@
 <p class="text-muted">Real-time updates via Orleans Streams</p>
 
 <div class="row">
-    <div class="col-6">
-        <h4 style="color: green;">Bids (Buy Orders)</h4>
+    <div class="col-4">
+        <h4 style="color: green;">Bids (Buy)</h4>
         <table class="table table-sm">
             <thead>
                 <tr>
                     <th>Price</th>
-                    <th>Quantity</th>
+                    <th>Qty</th>
                 </tr>
             </thead>
             <tbody>
@@ -49,13 +49,13 @@
         </table>
     </div>
 
-    <div class="col-6">
-        <h4 style="color: red;">Asks (Sell Orders)</h4>
+    <div class="col-4">
+        <h4 style="color: red;">Asks (Sell)</h4>
         <table class="table table-sm">
             <thead>
                 <tr>
                     <th>Price</th>
-                    <th>Quantity</th>
+                    <th>Qty</th>
                 </tr>
             </thead>
             <tbody>
@@ -70,6 +70,36 @@
                         <tr style="color: red;">
                             <td>@ask.Price.ToString("F2")</td>
                             <td>@ask.TotalQuantity.ToString("F4")</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="col-4">
+        <h4>Recent Trades</h4>
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th>Price</th>
+                    <th>Qty</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (_trades.Count == 0)
+                {
+                    <tr><td colspan="3" class="text-muted">No trades</td></tr>
+                }
+                else
+                {
+                    @foreach (var trade in _trades)
+                    {
+                        <tr style="color: @(trade.TakerSide == ZestExchange.Contracts.Orders.OrderSide.Buy ? "green" : "red")">
+                            <td>@trade.Price.ToString("F2")</td>
+                            <td>@trade.Quantity.ToString("F4")</td>
+                            <td>@trade.Timestamp.ToString("HH:mm:ss")</td>
                         </tr>
                     }
                 }
@@ -93,11 +123,13 @@
     private string _currentSubscribedSymbol = "";
     private List<PriceLevelDto> _bids = new();
     private List<PriceLevelDto> _asks = new();
+    private List<TradeOccurred> _trades = new();
     private DateTime _lastUpdate = DateTime.MinValue;
     private int _updateCount = 0;
     private string _status = "Connecting...";
 
     private StreamSubscriptionHandle<OrderBookUpdated>? _subscription;
+    private StreamSubscriptionHandle<TradeOccurred>? _tradeSubscription;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -118,13 +150,19 @@
         {
             _status = $"Switching to {symbol}...";
             
-            // 1. Cleanup old subscription
+            // 1. Cleanup old subscriptions
             if (_subscription != null)
             {
                 await _subscription.UnsubscribeAsync();
                 _subscription = null;
-                _updateCount = 0;
             }
+            if (_tradeSubscription != null)
+            {
+                await _tradeSubscription.UnsubscribeAsync();
+                _tradeSubscription = null;
+            }
+            _updateCount = 0;
+            _trades.Clear(); // Clear trades list on switch
 
             // 2. Initial load from Grain
             var grain = ClusterClient.GetGrain<IMatchingEngineGrain>(symbol);
@@ -133,12 +171,18 @@
             _asks = snapshot.Asks;
             _lastUpdate = snapshot.Timestamp;
 
-            // 3. Subscribe to Orleans Stream
+            // 3. Subscribe to Orleans Stream (OrderBook)
             var streamProvider = ClusterClient.GetStreamProvider("OrderBookProvider");
             var stream = streamProvider.GetStream<OrderBookUpdated>(
                 StreamId.Create("orderbook", symbol));
-
+            
             _subscription = await stream.SubscribeAsync(OnOrderBookUpdated);
+
+            // 4. Subscribe to Orleans Stream (Trades)
+            var tradeStream = streamProvider.GetStream<TradeOccurred>(
+                StreamId.Create("trades", symbol));
+            
+            _tradeSubscription = await tradeStream.SubscribeAsync(OnTradeOccurred);
             
             _currentSubscribedSymbol = symbol;
             _status = $"Subscribed to {symbol}";
@@ -158,15 +202,25 @@
         _updateCount++;
 
         InvokeAsync(StateHasChanged);
+        return Task.CompletedTask;
+    }
 
+    private Task OnTradeOccurred(TradeOccurred trade, StreamSequenceToken? token)
+    {
+        // Add to top, keep max 20
+        _trades.Insert(0, trade);
+        if (_trades.Count > 20)
+        {
+            _trades.RemoveAt(_trades.Count - 1);
+        }
+
+        InvokeAsync(StateHasChanged);
         return Task.CompletedTask;
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_subscription != null)
-        {
-            try { await _subscription.UnsubscribeAsync(); } catch { }
-        }
+        if (_subscription != null) try { await _subscription.UnsubscribeAsync(); } catch { }
+        if (_tradeSubscription != null) try { await _tradeSubscription.UnsubscribeAsync(); } catch { }
     }
 }
