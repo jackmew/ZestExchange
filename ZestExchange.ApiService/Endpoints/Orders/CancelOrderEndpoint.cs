@@ -1,4 +1,5 @@
 using FastEndpoints;
+using ZestExchange.Contracts.Orders;
 
 namespace ZestExchange.ApiService.Endpoints.Orders;
 
@@ -31,10 +32,3 @@ public class CancelOrderEndpoint : Endpoint<CancelOrderRequest, CancelOrderRespo
         return Task.CompletedTask;
     }
 }
-
-public record CancelOrderRequest(Guid OrderId);
-
-public record CancelOrderResponse(
-    Guid OrderId,
-    bool Success,
-    string? Message = null);

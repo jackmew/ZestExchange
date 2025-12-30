@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ZestExchange.ServiceDefaults\ZestExchange.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\ZestExchange.Contracts\ZestExchange.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

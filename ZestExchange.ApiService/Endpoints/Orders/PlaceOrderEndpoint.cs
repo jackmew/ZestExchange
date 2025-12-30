@@ -1,4 +1,5 @@
 using FastEndpoints;
+using ZestExchange.Contracts.Orders;
 
 namespace ZestExchange.ApiService.Endpoints.Orders;
 
@@ -35,21 +36,3 @@ public class PlaceOrderEndpoint : Endpoint<PlaceOrderRequest, PlaceOrderResponse
         return Task.CompletedTask;
     }
 }
-
-// Enums
-public enum OrderSide { Buy, Sell }
-public enum OrderType { Limit, Market }
-public enum OrderStatus { New, PartiallyFilled, Filled, Cancelled, Rejected }
-
-// Request/Response DTOs
-public record PlaceOrderRequest(
-    string Symbol,
-    OrderSide Side,
-    OrderType Type,
-    decimal Price,
-    decimal Quantity);
-
-public record PlaceOrderResponse(
-    Guid OrderId,
-    OrderStatus Status,
-    string? Message = null);

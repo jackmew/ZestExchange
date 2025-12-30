@@ -1,4 +1,5 @@
 using FastEndpoints;
+using ZestExchange.Contracts.Orders;
 
 namespace ZestExchange.ApiService.Endpoints.Orders;
 
@@ -37,16 +38,3 @@ public class GetOrderEndpoint : Endpoint<GetOrderRequest, GetOrderResponse>
         return Task.CompletedTask;
     }
 }
-
-public record GetOrderRequest(Guid OrderId);
-
-public record GetOrderResponse(
-    Guid OrderId,
-    string Symbol,
-    OrderSide Side,
-    OrderType Type,
-    decimal Price,
-    decimal Quantity,
-    decimal FilledQuantity,
-    OrderStatus Status,
-    DateTime CreatedAt);
