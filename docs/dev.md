@@ -1,3 +1,39 @@
+# Run separetely
+```
+cd Projects/c-net/ZestExchange
+dotnet run --project ZestExchange.Silo
+dotnet run --project ZestExchange.ApiService
+dotnet run --project ZestExchange.Web
+```
+
+## Aspire - Service Discovery
+```
+  dotnet run --project ZestExchange.AppHost 會自動啟動這三個：
+
+  AppHost (Aspire 編排器)
+      │
+      ├── 啟動 ZestExchange.Silo
+      ├── 啟動 ZestExchange.ApiService
+      └── 啟動 ZestExchange.Web
+```
+  這是在 AppHost/Program.cs 定義的：
+```c#
+  var silo = builder.AddProject<Projects.ZestExchange_Silo>("silo");
+  var apiService = builder.AddProject<Projects.ZestExchange_ApiService>("apiservice");
+  builder.AddProject<Projects.ZestExchange_Web>("webfrontend");
+```
+  Aspire 的好處
+```
+  | 手動跑                   | 用 AppHost                 |
+  |--------------------------|----------------------------|
+  | 開 3 個 terminal         | 1 個 terminal              |
+  | 自己管理啟動順序         | 自動處理                   |
+  | Service Discovery 不work | Service Discovery 自動設定 |
+  | 沒有 Dashboard           | 有 Dashboard 看狀態/logs   |
+```
+  所以 apiservice 這個名稱只有透過 AppHost 啟動時才能被 Web 解析到。
+
+
 # 加 FastEndpoints + Swagger
 ```
 cd /Users/zest/Projects/c-net/ZestExchange/ZestExchange.ApiService 
@@ -295,4 +331,11 @@ dotnet add ZestExchange.Silo reference ZestExchange.ServiceDefaults
   HTTP Request → FastEndpoint → IClusterClient → Orleans Grain → OrderBookEngine
 
   ---
-  你之後想繼續完成什麼？
+  # 你之後想繼續完成什麼？
+
+  請告訴我，我們來討論如何銜接。例如：
+  1. 加 Redis 做 Orleans Clustering？
+  2. 加 Orleans Streams 廣播成交事件？
+  3. 加 WebSocket 推送即時行情？
+  4. 加使用者系統 (JWT)？
+  5. 其他？
