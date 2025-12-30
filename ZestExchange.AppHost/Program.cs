@@ -11,4 +11,9 @@ builder.AddProject<Projects.ZestExchange_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithReference(apiService);
 
+// Load Generator (Simulation)
+builder.AddProject<Projects.ZestExchange_LoadGenerator>("loadgenerator")
+    .WithEnvironment("LOAD_GEN_USERS", "5") // Simulate 5 concurrent users
+    .WithEnvironment("LOAD_GEN_INTERVAL_MS", "200"); // 5 orders/sec per user ~= 25 TPS
+
 builder.Build().Run();
