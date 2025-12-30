@@ -127,8 +127,7 @@ public class OrderGeneratorWorker : BackgroundService
         var change = (decimal)(_random.NextDouble() - 0.5) * 0.01m; 
         _currentPrice += _currentPrice * change;
         
-        // Keep price sanity
-        if (_currentPrice < 10000) _currentPrice = 10000;
-        if (_currentPrice > 100000) _currentPrice = 100000;
+        // Keep price sanity (Don't let it go below a penny)
+        if (_currentPrice < 0.01m) _currentPrice = 0.01m;
     }
 }
