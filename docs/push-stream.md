@@ -449,3 +449,42 @@ Console App 是 Orleans Client，可以直接訂閱 MemoryStreams！
   總結：
   你不需要手動加 SignalR，因為你選用了 Blazor
   Server。它幫你把最困難的「伺服器主動推播到瀏覽器」這部分封裝好了。你只需要關注 C# 邏輯就好！
+
+
+# 真正的架構（不需要自己建 SignalR）
+```
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                                                                              │
+  │  ZestExchange.Silo                     ZestExchange.Web                      │
+  │  ┌─────────────────┐                   ┌─────────────────────────────────┐  │
+  │  │                 │                   │                                 │  │
+  │  │ MatchingEngine  │   Orleans         │  UseOrleansClient()             │  │
+  │  │ Grain           │   Protocol        │       ↓                         │  │
+  │  │      │          │ ──────────────►   │  Orleans Client 訂閱 Stream     │  │
+  │  │      ▼          │   (TCP 30000)     │       ↓                         │  │
+  │  │ Stream.OnNext() │                   │  OnOrderBookUpdated() 被觸發    │  │
+  │  │                 │                   │       ↓                         │  │
+  │  └─────────────────┘                   │  StateHasChanged()              │  │
+  │                                        │       ↓                         │  │
+  │                                        │  Blazor 內建 SignalR ──────────────┼──► Browser
+  │                                        │  (自動的！不用自己建)           │  │
+  │                                        │                                 │  │
+  │                                        └─────────────────────────────────┘  │
+  │                                                                              │
+  └─────────────────────────────────────────────────────────────────────────────┘
+```
+  關鍵理解
+
+  | 層級          | 技術                   | 誰建的？           |
+  |---------------|------------------------|--------------------|
+  | Silo ↔ Web    | Orleans Protocol (TCP) | UseOrleansClient() |
+  | Web ↔ Browser | SignalR WebSocket      | Blazor 內建！      |
+
+  @rendermode InteractiveServer 啟用了 Blazor 內建的 SignalR 連線！
+
+  所以：
+  - ✅ Orleans Streams 本來就可以跨進程（透過 Orleans Protocol）
+  - ❌ 但沒有 InteractiveServer，Blazor 不會維持 SignalR 連線到 Browser
+  - ✅ 加上 InteractiveServer 後，StateHasChanged() 就能透過 Blazor 內建 SignalR 推送到 Browser
+
+  Orleans Streams 一直都是通的，只是 Blazor 的最後一哩路斷了！
