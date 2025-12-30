@@ -1,5 +1,6 @@
 using ZestExchange.Web;
 using ZestExchange.Web.Components;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +16,17 @@ builder.Services.AddOutputCache();
 // Add Orleans Client for real-time OrderBook (connects to Silo)
 builder.UseOrleansClient(clientBuilder =>
 {
-    clientBuilder.UseLocalhostClustering();
+    var connectionString = builder.Configuration.GetConnectionString("redis");
+
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        clientBuilder.UseLocalhostClustering();
+    }
+    else
+    {
+        clientBuilder.UseRedisClustering(options => options.ConfigurationOptions = ConfigurationOptions.Parse(connectionString));
+    }
+
     // Same stream provider as Silo for subscribing to OrderBook updates
     clientBuilder.AddMemoryStreams("OrderBookProvider");
 });

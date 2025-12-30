@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using FastEndpoints;
 using FastEndpoints.Swagger;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +14,19 @@ builder.Services.AddProblemDetails();
 // Add Orleans Client (連接 Silo)
 builder.UseOrleansClient(clientBuilder =>
 {
-    clientBuilder.UseLocalhostClustering();
+    var connectionString = builder.Configuration.GetConnectionString("redis");
+    Console.WriteLine($"[DEBUG] Redis ConnectionString: '{connectionString}'"); // Debug log
+
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        Console.WriteLine("[DEBUG] Using Localhost Clustering (Fallback)");
+        clientBuilder.UseLocalhostClustering();
+    }
+    else
+    {
+        Console.WriteLine("[DEBUG] Using Redis Clustering");
+        clientBuilder.UseRedisClustering(options => options.ConfigurationOptions = ConfigurationOptions.Parse(connectionString));
+    }
 });
 
 // Add FastEndpoints

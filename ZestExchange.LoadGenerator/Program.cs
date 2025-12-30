@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
+using StackExchange.Redis;
 using ZestExchange.LoadGenerator;
 
 var builder = Host.CreateApplicationBuilder(args);
@@ -10,7 +12,16 @@ builder.AddServiceDefaults();
 // 2. Add Orleans Client
 builder.UseOrleansClient(client =>
 {
-    client.UseLocalhostClustering();
+    var connectionString = builder.Configuration.GetConnectionString("redis");
+
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        client.UseLocalhostClustering();
+    }
+    else
+    {
+        client.UseRedisClustering(options => options.ConfigurationOptions = ConfigurationOptions.Parse(connectionString));
+    }
 });
 
 // 3. Register Worker
