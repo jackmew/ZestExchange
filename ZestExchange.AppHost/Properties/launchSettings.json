@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json.schemastore.org/launchsettings.json",
+  "profiles": {
+    "https": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "https://localhost:17256;http://localhost:15054",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development",
+        "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "https://localhost:21233",
+        "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "https://localhost:22017",
+        "DOTNET_ROOT": "/Users/zest/.asdf/installs/dotnet/9.0.200"
+      }
+    },
+    "http": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "applicationUrl": "http://localhost:15054",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DOTNET_ENVIRONMENT": "Development",
+        "DOTNET_DASHBOARD_OTLP_ENDPOINT_URL": "http://localhost:19223",
+        "DOTNET_RESOURCE_SERVICE_ENDPOINT_URL": "http://localhost:20033",
+        "DOTNET_ROOT": "/Users/zest/.asdf/installs/dotnet/9.0.200"
+      }
+    }
+  }
+}

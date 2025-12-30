@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "swtPeq6Ye99/aaSX1Be/3ajwpFSIJf8f6w9LZLAtuJM=",
+  "Source": "ZestExchange.ApiService",
+  "BasePath": "_content/ZestExchange.ApiService",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}

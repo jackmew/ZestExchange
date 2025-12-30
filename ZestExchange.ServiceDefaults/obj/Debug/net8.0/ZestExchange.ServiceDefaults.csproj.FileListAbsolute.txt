@@ -1,0 +1,12 @@
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/bin/Debug/net8.0/ZestExchange.ServiceDefaults.deps.json
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/bin/Debug/net8.0/ZestExchange.ServiceDefaults.dll
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/bin/Debug/net8.0/ZestExchange.ServiceDefaults.pdb
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/obj/Debug/net8.0/ZestExchange.ServiceDefaults.csproj.AssemblyReference.cache
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/obj/Debug/net8.0/ZestExchange.ServiceDefaults.GeneratedMSBuildEditorConfig.editorconfig
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/obj/Debug/net8.0/ZestExchange.ServiceDefaults.AssemblyInfoInputs.cache
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/obj/Debug/net8.0/ZestExchange.ServiceDefaults.AssemblyInfo.cs
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/obj/Debug/net8.0/ZestExchange.ServiceDefaults.csproj.CoreCompileInputs.cache
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/obj/Debug/net8.0/ZestExchange.ServiceDefaults.dll
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/obj/Debug/net8.0/refint/ZestExchange.ServiceDefaults.dll
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/obj/Debug/net8.0/ZestExchange.ServiceDefaults.pdb
+/Users/zest/Projects/c-net/ZestExchange/ZestExchange.ServiceDefaults/obj/Debug/net8.0/ref/ZestExchange.ServiceDefaults.dll

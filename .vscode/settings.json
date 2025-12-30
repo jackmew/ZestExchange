@@ -1,0 +1,12 @@
+{
+  "dotnetAcquisitionExtension.existingDotnetPath": [
+    {
+      "extensionId": "ms-dotnettools.csharp",
+      "path": "/Users/zest/.asdf/installs/dotnet/9.0.200/dotnet"
+    },
+    {
+      "extensionId": "ms-dotnettools.csdevkit",
+      "path": "/Users/zest/.asdf/installs/dotnet/9.0.200/dotnet"
+    }
+  ]
+}
