@@ -1,14 +1,18 @@
 using FastEndpoints;
+using Orleans;
+using ZestExchange.Contracts.Grains;
 using ZestExchange.Contracts.Orders;
 
 namespace ZestExchange.ApiService.Endpoints.Orders;
 
 public class PlaceOrderEndpoint : Endpoint<PlaceOrderRequest, PlaceOrderResponse>
 {
+    private readonly IClusterClient _clusterClient; // (DI 注入) Orleans 提供的「連接器」
     private readonly ILogger<PlaceOrderEndpoint> _logger;
 
-    public PlaceOrderEndpoint(ILogger<PlaceOrderEndpoint> logger)
+    public PlaceOrderEndpoint(IClusterClient clusterClient, ILogger<PlaceOrderEndpoint> logger)
     {
+        _clusterClient = clusterClient;
         _logger = logger;
     }
 
@@ -19,20 +23,16 @@ public class PlaceOrderEndpoint : Endpoint<PlaceOrderRequest, PlaceOrderResponse
         Tags("Orders");
     }
 
-    public override Task HandleAsync(PlaceOrderRequest req, CancellationToken ct)
+    public override async Task HandleAsync(PlaceOrderRequest req, CancellationToken ct)
     {
         _logger.LogInformation(
             "PlaceOrder: {Symbol} {Side} {Type} Price={Price} Qty={Quantity}",
             req.Symbol, req.Side, req.Type, req.Price, req.Quantity);
 
-        // Mock implementation - generate a fake order ID
-        var orderId = Guid.NewGuid();
+        // 取得該交易對的 Grain
+        var grain = _clusterClient.GetGrain<IMatchingEngineGrain>(req.Symbol);
 
-        Response = new PlaceOrderResponse(
-            OrderId: orderId,
-            Status: OrderStatus.New,
-            Message: "Order placed successfully (mock)");
-
-        return Task.CompletedTask;
+        // 呼叫 Grain 下單
+        Response = await grain.PlaceOrderAsync(req);
     }
 }
