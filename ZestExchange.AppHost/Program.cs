@@ -12,8 +12,16 @@ builder.AddProject<Projects.ZestExchange_Web>("webfrontend")
     .WithReference(apiService);
 
 // Load Generator (Simulation)
-builder.AddProject<Projects.ZestExchange_LoadGenerator>("loadgenerator")
-    .WithEnvironment("LOAD_GEN_USERS", "5") // Simulate 5 concurrent users
-    .WithEnvironment("LOAD_GEN_INTERVAL_MS", "200"); // 5 orders/sec per user ~= 25 TPS
+builder.AddProject<Projects.ZestExchange_LoadGenerator>("load-btc")
+    .WithEnvironment("LOAD_GEN_SYMBOL", "BTC-USDT")
+    .WithEnvironment("LOAD_GEN_START_PRICE", "50000")
+    .WithEnvironment("LOAD_GEN_USERS", "3")
+    .WithEnvironment("LOAD_GEN_INTERVAL_MS", "300");
+
+builder.AddProject<Projects.ZestExchange_LoadGenerator>("load-eth")
+    .WithEnvironment("LOAD_GEN_SYMBOL", "ETH-USDT")
+    .WithEnvironment("LOAD_GEN_START_PRICE", "3000")
+    .WithEnvironment("LOAD_GEN_USERS", "2")
+    .WithEnvironment("LOAD_GEN_INTERVAL_MS", "500");
 
 builder.Build().Run();

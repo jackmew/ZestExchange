@@ -18,7 +18,7 @@ public class OrderGeneratorWorker : BackgroundService
 
     // Simulation State
     private const string DefaultSymbol = "BTC-USDT";
-    private decimal _currentPrice = 50000m; // Starting Price
+    private decimal _currentPrice; 
     private readonly Random _random = new();
 
     public OrderGeneratorWorker(
@@ -30,6 +30,9 @@ public class OrderGeneratorWorker : BackgroundService
         _logger = logger;
         _configuration = configuration;
         
+        // Load starting price from environment, default to 50000
+        _currentPrice = _configuration.GetValue<decimal>("LOAD_GEN_START_PRICE", 50000m);
+
         // Metrics
         _meter = new Meter("ZestExchange.LoadGenerator");
         _orderCounter = _meter.CreateCounter<long>("orders_placed", description: "Total orders placed by generator");
