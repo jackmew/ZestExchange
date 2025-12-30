@@ -6,6 +6,13 @@
       "type": "dotnet",
       "request": "launch",
       "projectPath": "${workspaceFolder}/ZestExchange.AppHost/ZestExchange.AppHost.csproj"
+    },
+    {
+      "name": "Watch AppHost (Hot Reload)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/ZestExchange.AppHost/ZestExchange.AppHost.csproj",
+      "hotReloadEnabled": true
     }
   ]
 }
