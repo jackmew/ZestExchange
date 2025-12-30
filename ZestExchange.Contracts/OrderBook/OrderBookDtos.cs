@@ -1,11 +1,20 @@
+using Orleans;
+
 namespace ZestExchange.Contracts.OrderBook;
 
-public record GetOrderBookRequest(string Symbol, int Depth = 10);
+[GenerateSerializer]
+public record GetOrderBookRequest(
+    [property: Id(0)] string Symbol,
+    [property: Id(1)] int Depth = 10);
 
+[GenerateSerializer]
 public record GetOrderBookResponse(
-    string Symbol,
-    List<PriceLevelDto> Bids,
-    List<PriceLevelDto> Asks,
-    DateTime Timestamp);
+    [property: Id(0)] string Symbol,
+    [property: Id(1)] List<PriceLevelDto> Bids,
+    [property: Id(2)] List<PriceLevelDto> Asks,
+    [property: Id(3)] DateTime Timestamp);
 
-public record PriceLevelDto(decimal Price, decimal TotalQuantity);
+[GenerateSerializer]
+public record PriceLevelDto(
+    [property: Id(0)] decimal Price,
+    [property: Id(1)] decimal TotalQuantity);
