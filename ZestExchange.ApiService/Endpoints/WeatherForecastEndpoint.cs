@@ -18,8 +18,9 @@ public class WeatherForecastEndpoint : EndpointWithoutRequest<WeatherForecast[]>
 
     public override void Configure()
     {
-        Get("/weatherforecast");
+        Get("/api/weatherforecast");
         AllowAnonymous();
+        Tags("Weather");
     }
 
     public override Task HandleAsync(CancellationToken ct)

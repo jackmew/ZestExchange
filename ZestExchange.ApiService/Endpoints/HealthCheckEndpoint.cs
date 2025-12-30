@@ -15,6 +15,7 @@ public class HealthCheckEndpoint : EndpointWithoutRequest<HealthCheckResponse>
     {
         Get("/api/health");
         AllowAnonymous();
+        Tags("Health");
     }
 
     public override Task HandleAsync(CancellationToken ct)
