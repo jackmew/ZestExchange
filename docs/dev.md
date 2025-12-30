@@ -5,6 +5,7 @@ dotnet add package FastEndpoints
 dotnet add package FastEndpoints.Swagger
 ```
 
+
 ## EndPoints
 
 ```
@@ -184,3 +185,11 @@ Contract = 合約/契約，表示服務之間的「約定」。
   | Contracts      | Contracts/   | API 介面定義                          |
 
   面試可以提到：「Order 是 Rich Domain Model，不只是資料袋，還封裝了業務行為。」
+
+
+# Orleans
+```
+dotnet add ZestExchange.Contracts package Microsoft.Orleans.Sdk
+dotnet add ZestExchange.Silo package Microsoft.Orleans.Server
+dotnet add ZestExchange.Silo reference ZestExchange.ServiceDefaults
+```

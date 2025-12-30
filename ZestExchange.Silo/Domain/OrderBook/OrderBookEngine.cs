@@ -44,6 +44,7 @@ public class OrderBookEngine
         decimal price,
         decimal quantity)
     {
+        // 1. Taker 剛出生
         var order = new Order(
             id: Guid.NewGuid(),
             symbol: _symbol,
@@ -55,9 +56,9 @@ public class OrderBookEngine
         var trades = new List<Trade>();
 
         // Try to match
-        trades = Match(order);
+        trades = Match(order); // 2. Taker 嘗試去「吃」別人 (Match
 
-        // If order still has remaining quantity, add to book
+        // If order still has remaining quantity, add to book - 只有當 Taker 吃飽了還有剩，或者根本吃不到時, 才會把他「掛」到牆上 (AddToBook)
         if (order.RemainingQuantity > 0 && type == OrderType.Limit)
         {
             AddToBook(order);
@@ -69,8 +70,18 @@ public class OrderBookEngine
     /// <summary>
     /// Cancel an order - O(1) complexity
     /// </summary>
+    /*
+      引用型別 (Reference Type)
+
+      這時候，記憶體裡並沒有產生兩個隊伍。實際上發生的事是：
+        * 記憶體位址 0x123 存著這條隊伍。
+        * _bids[50000] 指向 0x123。
+        * _orderLookup[ID].PriceLevel 也指向 0x123。
+
+        _orderLookup[ID].Node 也是引用
+    */
     public bool CancelOrder(Guid orderId)
-    {
+    {   
         if (!_orderLookup.TryGetValue(orderId, out var location))
         {
             return false;
@@ -108,6 +119,23 @@ public class OrderBookEngine
     /// <summary>
     /// Get orderbook snapshot
     /// </summary>
+    /// 
+    /// 
+    /*
+    當你呼叫 GetSnapshot(depth: 2) 時，回傳的資料看起來會像這樣：
+    1 {
+    2   "symbol": "BTC-USDT",
+    3   "bids": [
+    4     { "price": 50000.0, "totalQuantity": 5.5 }, // 這是小明(1.0) + 老王(4.5) 的加總
+    5     { "price": 49990.0, "totalQuantity": 10.2 }
+    6   ],
+    7   "asks": [
+    8     { "price": 50100.0, "totalQuantity": 2.1 },
+    9     { "price": 50200.0, "totalQuantity": 4.8 }
+   10   ],
+   11   "timestamp": "2023-10-27T10:00:00Z"
+   12 }
+    */
     public GetOrderBookResponse GetSnapshot(int depth = 10)
     {
         var bids = _bids
@@ -129,19 +157,23 @@ public class OrderBookEngine
     private List<Trade> Match(Order takerOrder)
     {
         var trades = new List<Trade>();
-        var oppositeBook = takerOrder.Side == OrderSide.Buy ? _asks : _bids;
+        var oppositeBook = takerOrder.Side == OrderSide.Buy ? _asks : _bids; //對手
 
+        // 核心迴圈：只要我還沒買夠/賣完 (RemainingQuantity > 0)
+        // 且對手盤還有單 (oppositeBook.Count > 0)，就繼續撮
         while (takerOrder.RemainingQuantity > 0 && oppositeBook.Count > 0)
         {
-            var bestPrice = oppositeBook.First().Key;
-            var priceLevel = oppositeBook.First().Value;
+            var bestPrice = oppositeBook.First().Key;       // 對手盤最好的價格
+            var priceLevel = oppositeBook.First().Value;    // 那個價格的排隊隊伍
 
             // Check if price matches
+            // 是否價格有對上 才有可能成交(下一步就是看剩餘數量RemainingQuantity)
             bool priceMatches = takerOrder.Side == OrderSide.Buy
-                ? takerOrder.Price >= bestPrice  // Buy: willing to pay >= ask price
-                : takerOrder.Price <= bestPrice; // Sell: willing to accept <= bid price
+                ? takerOrder.Price >= bestPrice  // Buy: willing to pay >= ask price.     買單：我出 50000 >= 對手賣 49000
+                : takerOrder.Price <= bestPrice; // Sell: willing to accept <= bid price. 賣單：我賣 49000 <= 對手買 50000
 
             // Market order always matches
+            // 「如果這是一張『限價單 (Limit Order)』，而且價格『談不攏(!priceMatches)』，那就別玩了，直接回家 (Break)。」
             if (takerOrder.Type != OrderType.Market && !priceMatches)
             {
                 break;
@@ -151,6 +183,19 @@ public class OrderBookEngine
             while (takerOrder.RemainingQuantity > 0 && priceLevel.Count > 0)
             {
                 var makerOrder = priceLevel.First!.Value;
+                // 拆單 (Partial Fill)
+                /*
+                  這行程式碼完美體現了拆單邏輯：
+                    * 情境：小明想買 10 顆 (taker)，對手老王只賣 3 顆 (maker)。
+                    * 結果：Min(10, 3) = 3。
+                    * 動作：
+                        * 小明買到了 3 顆（還剩 7 顆）。
+                        * 老王賣掉了 3 顆（剩 0 顆，賣完了）。
+                        * 這就是一筆成交記錄 (Trade)，數量是 3。
+
+                    接著迴圈會繼續跑 (while)，因為小明還有 7 顆沒買到 (takerOrder.RemainingQuantity >
+                    0)，他會繼續吃下一個賣家的單。
+                */
                 var matchQty = Math.Min(takerOrder.RemainingQuantity, makerOrder.RemainingQuantity);
 
                 // Execute trade
@@ -173,6 +218,34 @@ public class OrderBookEngine
                     _orderLookup.Remove(makerOrder.Id);
                     priceLevel.RemoveFirst();
                 }
+                /*
+                  Q:為什麼 TakerOrder 不需要被移除？   
+                  A:Taker 這時候根本還沒「進入」OrderBook。
+
+                    關鍵點：
+                    * Maker (對手盤)：他們是早就掛在牆上（OrderBook 裡）的人。所以當他們被吃光
+                        (RemainingQuantity == 0)，我們必須把他們從牆上撕下來 (priceLevel.RemoveFirst() +
+                        _orderLookup.Remove)。
+                    * Taker (你這張單)：他在 Match
+                        函數執行時，還只是一個在記憶體裡遊蕩的自由靈魂，還沒被掛上去。
+                        * 如果他在 Match
+                            裡被完全滿足了（買滿了），那他直接就結束了，回傳給用戶就好。既然從來沒掛上去過，
+                            自然就不需要移除。
+                        * 只有當他 Match 完還剩下一些，才會在 PlaceOrder 的最後一步被 AddToBook 掛上去。
+
+                    費曼總結
+
+                    * Maker (牆上的單)：像是超市架上的商品。被買走就要下架。
+                    * Taker (你的單)：像是你的購物籃。
+                        * 你拿著籃子去裝商品（Match）。
+                        * 如果籃子裝滿了，你就結帳走人（不需要下架，因為你根本沒上架過）。
+                        * 如果籃子沒裝滿，超市又沒貨了，你才會決定把剩下的需求寫在紙條上貼在牆上（這時候你
+                            才變成了新的 Maker）。
+
+                    所以程式碼邏輯是完全正確的：Maker 需要被移除，Taker 不需要（因為他還不在上面）。
+                */
+                
+
             }
 
             // Remove empty price level
@@ -234,6 +307,7 @@ public class OrderBookEngine
     // LinkedList.AddLast 確保了新來的單永遠排在舊單的後面。隊伍長這樣：
     // 
         var node = priceLevel.AddLast(order);
+
 
         _orderLookup[order.Id] = new OrderLocation(priceLevel, node);
     }
