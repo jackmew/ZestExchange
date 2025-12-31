@@ -3,9 +3,15 @@ var builder = DistributedApplication.CreateBuilder(args);
 // Add Redis for Orleans Clustering and Persistence
 var redis = builder.AddRedis("redis");
 
+// Add PostgreSQL for Trade History (Persistent Storage)
+var postgres = builder.AddPostgres("postgres")
+    .WithDataVolume();
+var db = postgres.AddDatabase("exchangedb");
+
 // Orleans Silo (撮合引擎) - 不需要 HTTP endpoints
 var silo = builder.AddProject<Projects.ZestExchange_Silo>("silo")
-    .WithReference(redis);
+    .WithReference(redis)
+    .WithReference(db);
 
 // API Service (透過 localhost clustering 連接 Orleans)
 var apiService = builder.AddProject<Projects.ZestExchange_ApiService>("apiservice")
@@ -16,7 +22,8 @@ var apiService = builder.AddProject<Projects.ZestExchange_ApiService>("apiservic
 builder.AddProject<Projects.ZestExchange_Web>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithReference(apiService)
-    .WithReference(redis);
+    .WithReference(redis)
+    .WithReference(db);
 
 // Load Generator (Simulation)
 builder.AddProject<Projects.ZestExchange_LoadGenerator>("load-btc")

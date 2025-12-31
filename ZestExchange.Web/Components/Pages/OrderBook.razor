@@ -7,18 +7,51 @@
 @using ZestExchange.Contracts.Grains
 @using ZestExchange.Contracts.OrderBook
 @using ZestExchange.Contracts.Events
+@using ZestExchange.Repository 
 @inject IClusterClient ClusterClient
+@inject TradeRepository TradeRepo
 
 <PageTitle>OrderBook - @Symbol</PageTitle>
 
-<div class="d-flex justify-content-between align-items-center">
-    <h1>OrderBook - @Symbol</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>@Symbol</h1>
     <div class="btn-group">
         <a href="/orderbook/BTC-USDT" class="btn btn-outline-primary @(Symbol == "BTC-USDT" ? "active" : "")">BTC-USDT</a>
         <a href="/orderbook/ETH-USDT" class="btn btn-outline-primary @(Symbol == "ETH-USDT" ? "active" : "")">ETH-USDT</a>
     </div>
 </div>
-<p class="text-muted">Real-time updates via Orleans Streams</p>
+
+<!-- Market Stats Panel -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col">
+                <small class="text-muted">Last Price</small>
+                <h3 class="@GetPriceColor(_stats?.Change24hPercent ?? 0)">
+                    @(_stats?.LastPrice.ToString("F2") ?? "-")
+                </h3>
+            </div>
+            <div class="col">
+                <small class="text-muted">24h Change</small>
+                <h4 class="@GetPriceColor(_stats?.Change24hPercent ?? 0)">
+                    @(_stats?.Change24hPercent.ToString("F2") ?? "0")%
+                </h4>
+            </div>
+            <div class="col">
+                <small class="text-muted">24h High</small>
+                <h5>@(_stats?.High24h.ToString("F2") ?? "-")</h5>
+            </div>
+            <div class="col">
+                <small class="text-muted">24h Low</small>
+                <h5>@(_stats?.Low24h.ToString("F2") ?? "-")</h5>
+            </div>
+            <div class="col">
+                <small class="text-muted">24h Volume</small>
+                <h5>@(_stats?.Volume24h.ToString("F4") ?? "-")</h5>
+            </div>
+        </div>
+    </div>
+</div>
 
 <div class="row">
     <div class="col-4">
@@ -77,7 +110,6 @@
         </table>
     </div>
 
-
     <div class="col-4">
         <h4>Recent Trades</h4>
         <table class="table table-sm">
@@ -125,12 +157,15 @@
     private List<PriceLevelDto> _bids = new();
     private List<PriceLevelDto> _asks = new();
     private List<TradeOccurred> _trades = new();
+    private MarketStats? _stats;
     private DateTime _lastUpdate = DateTime.MinValue;
     private int _updateCount = 0;
     private string _status = "Connecting...";
 
     private StreamSubscriptionHandle<OrderBookUpdated>? _subscription;
     private StreamSubscriptionHandle<TradeOccurred>? _tradeSubscription;
+    
+    private Timer? _statsTimer;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -152,18 +187,12 @@
             _status = $"Switching to {symbol}...";
             
             // 1. Cleanup old subscriptions
-            if (_subscription != null)
-            {
-                await _subscription.UnsubscribeAsync();
-                _subscription = null;
-            }
-            if (_tradeSubscription != null)
-            {
-                await _tradeSubscription.UnsubscribeAsync();
-                _tradeSubscription = null;
-            }
+            if (_subscription != null) { await _subscription.UnsubscribeAsync(); _subscription = null; }
+            if (_tradeSubscription != null) { await _tradeSubscription.UnsubscribeAsync(); _tradeSubscription = null; }
+            
             _updateCount = 0;
-            _trades.Clear(); // Clear trades list on switch
+            _trades.Clear();
+            _stats = null;
 
             // 2. Initial load from Grain
             var grain = ClusterClient.GetGrain<IMatchingEngineGrain>(symbol);
@@ -185,6 +214,10 @@
             
             _tradeSubscription = await tradeStream.SubscribeAsync(OnTradeOccurred);
             
+            // 5. Start Stats Timer (Polling DB)
+            if (_statsTimer != null) _statsTimer.Dispose();
+            _statsTimer = new Timer(async _ => await FetchStats(symbol), null, 0, 2000); // Every 2s
+
             _currentSubscribedSymbol = symbol;
             _status = $"Subscribed to {symbol}";
             StateHasChanged();
@@ -195,32 +228,46 @@
         }
     }
 
+    private async Task FetchStats(string symbol)
+    {
+        try
+        {
+            var stats = await TradeRepo.Get24hStatsAsync(symbol);
+            if (stats != null)
+            {
+                _stats = stats;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch
+        {
+            // Ignore DB errors during polling
+        }
+    }
+
     private Task OnOrderBookUpdated(OrderBookUpdated update, StreamSequenceToken? token)
     {
         _bids = update.Bids;
         _asks = update.Asks;
         _lastUpdate = update.Timestamp;
         _updateCount++;
-
         InvokeAsync(StateHasChanged);
         return Task.CompletedTask;
     }
 
     private Task OnTradeOccurred(TradeOccurred trade, StreamSequenceToken? token)
     {
-        // Add to top, keep max 20
         _trades.Insert(0, trade);
-        if (_trades.Count > 20)
-        {
-            _trades.RemoveAt(_trades.Count - 1);
-        }
-
+        if (_trades.Count > 20) _trades.RemoveAt(_trades.Count - 1);
         InvokeAsync(StateHasChanged);
         return Task.CompletedTask;
     }
 
+    private string GetPriceColor(decimal change) => change >= 0 ? "text-success" : "text-danger";
+
     public async ValueTask DisposeAsync()
     {
+        _statsTimer?.Dispose();
         if (_subscription != null) try { await _subscription.UnsubscribeAsync(); } catch { }
         if (_tradeSubscription != null) try { await _tradeSubscription.UnsubscribeAsync(); } catch { }
     }

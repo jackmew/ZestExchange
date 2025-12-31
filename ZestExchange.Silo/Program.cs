@@ -1,9 +1,13 @@
 using StackExchange.Redis;
+using ZestExchange.Repository;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 // Add Aspire service defaults (OpenTelemetry, Health Checks)
 builder.AddServiceDefaults();
+
+// Add Repository (PostgreSQL)
+builder.Services.AddZestRepository(builder.Configuration);
 
 // Configure Orleans Silo
 builder.UseOrleans(siloBuilder =>

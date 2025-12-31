@@ -1,11 +1,15 @@
 using ZestExchange.Web;
 using ZestExchange.Web.Components;
 using StackExchange.Redis;
+using ZestExchange.Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire components.
 builder.AddServiceDefaults();
+
+// Add Repository (PostgreSQL)
+builder.Services.AddZestRepository(builder.Configuration);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

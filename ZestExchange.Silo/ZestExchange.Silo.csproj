@@ -18,5 +18,6 @@
   <ItemGroup>
     <ProjectReference Include="..\ZestExchange.Contracts\ZestExchange.Contracts.csproj" />
     <ProjectReference Include="..\ZestExchange.ServiceDefaults\ZestExchange.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\ZestExchange.Repository\ZestExchange.Repository.csproj" />
   </ItemGroup>
 </Project>
