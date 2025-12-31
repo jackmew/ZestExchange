@@ -5,9 +5,8 @@ var redis = builder.AddRedis("redis");
 
 // Add PostgreSQL for Trade History (Persistent Storage)
 var postgres = builder.AddPostgres("postgres")
-    .WithImage("postgres")
-    .WithEnvironment("PGDATA", "/var/lib/postgresql/data/pgdata")
-    .WithDataVolume();
+    .WithDataVolume()
+    .PublishAsAzurePostgresFlexibleServer();
 var db = postgres.AddDatabase("exchangedb");
 
 // Orleans Silo (撮合引擎) - 不需要 HTTP endpoints

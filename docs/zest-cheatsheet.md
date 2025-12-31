@@ -1,5 +1,11 @@
 # why C#
 
+# Why Distributed
+所有的技術架構演變，歸根結底都在解決這三個物理資源的矛盾：
+1. CPU 時間（算得快不快）
+2. Memory 記憶體空間（裝得下多少當下資料）
+3. 網路/IO 延遲（資料搬運要多久）
+
 # why C# Aspire
 
 # why Olreans
