@@ -8,7 +8,9 @@ dotnet run --project ZestExchange.Web
 
 ## Aspire - Service Discovery
 ```
-  dotnet run --project ZestExchange.AppHost 會自動啟動這三個：
+  dotnet run --project ZestExchange.AppHost 
+  
+  會自動啟動這三個：
 
   AppHost (Aspire 編排器)
       │

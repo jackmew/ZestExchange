@@ -134,7 +134,7 @@
   現在，我們可以先享受 ACA 帶來的便利，一鍵擁有一個雲端交易所。 🚀
 
   # azd deploy
-  
+
   ✦ 這就是 azd 最好用的地方。部署後如果你改了代碼，你不需要重新執行整個漫長的流程。
 
   根據你的修改內容，有兩種選擇：
@@ -165,3 +165,30 @@
    * azd provision：我只想在 Azure 上「開資源」，還不想推程式碼。
 
   要開始執行第一次的 `azd up` 了嗎？ 我們來看看你的雲端交易所誕生！ 🚀
+
+
+# azd deploy done
+
+Deploying services (azd deploy)
+
+  (✓) Done: Deploying service apiservice
+  - Endpoint: https://apiservice.internal.wittycoast-fc858374.japaneast.azurecontainerapps.io/
+
+  (✓) Done: Deploying service load-btc
+
+  (✓) Done: Deploying service load-eth
+
+  (✓) Done: Deploying service redis
+  - Endpoint: https://redis.internal.wittycoast-fc858374.japaneast.azurecontainerapps.io/
+
+  (✓) Done: Deploying service silo
+
+  (✓) Done: Deploying service webfrontend
+  - Endpoint: https://webfrontend.wittycoast-fc858374.japaneast.azurecontainerapps.io/
+
+  Aspire Dashboard: https://aspire-dashboard.ext.wittycoast-fc858374.japaneast.azurecontainerapps.io
+
+SUCCESS: Your application was deployed to Azure in 3 minutes 55 seconds.
+You can view the resources created under the resource group rg-zestexchange in Azure Portal:
+https://portal.azure.com/#@/resource/subscriptions/8428e473-e5fb-4a1b-9c8b-1305d4420532/resourceGroups/rg-zestexchange/overview
+
