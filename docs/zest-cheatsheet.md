@@ -6,9 +6,27 @@
 2. Memory 記憶體空間（裝得下多少當下資料）
 3. 網路/IO 延遲（資料搬運要多久）
 
+latency
+packet loss
+
+### CAP 定理
+1. Consistency (一致性)
+2. Availability (可用性 高可用)
+3. Partition Tolerance (分區容錯性) 必選，因為網路一定有可能斷或延遲
+
+P + C (不保證可用性) = 銀行轉帳   
+P + A (不保證一致性) = Facebook按讚 
+
 # why C# Aspire
 
 # why Olreans
+
+Actor Model
+
+Single Thread Loop
+
+
+## Addressable Location Transparency
 
 # why postgresql
 支持各種索引
