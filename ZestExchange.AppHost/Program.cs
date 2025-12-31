@@ -5,6 +5,8 @@ var redis = builder.AddRedis("redis");
 
 // Add PostgreSQL for Trade History (Persistent Storage)
 var postgres = builder.AddPostgres("postgres")
+    .WithImage("postgres")
+    .WithEnvironment("PGDATA", "/var/lib/postgresql/data/pgdata")
     .WithDataVolume();
 var db = postgres.AddDatabase("exchangedb");
 
